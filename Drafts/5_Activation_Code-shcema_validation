@@ -1,0 +1,58 @@
+Gretha came into the office earlier than usual, as she was awakened by thinking heavily about the comments in the PR. She forced herself out of work yesterday for her own good, although she still did not know how it happened. She started to wonder where this temporary sanity came from. She knew that she was obsessing about being not good enough too much, but she could not fight it off. Her inner voice was still mean, and it looked like it wanted her to fail. Thanks to it, she kept obsessing about the PR after work hours. Thus she did not rest very well. Early in the morning, she got slightly awoken by a sound outside the apartment, and her thoughts immediately landed on the activationCode and NOT operator. Her blood pressure got quicker, and her sleepiness went entirely away. She felt ready to start her day, although she knew it was impossible that she had gotten enough rest. She slept only six hours, and although some people claimed that was enough for them, it was too little for her. She tried to fall back to sleep, but at this point, it was pointless to her. 
+In the end, Gretha decided that this situation had its advantages. She’ll apply the change requests before all the developers come into the office so that they can start their day with her PR. She’ll get quick feedback and wouldn’t have to wait until after lunch hours to receive comments. She quickly opened her laptop and all windows from yesterday’s coding session reopened. Gretha pushed out yesterday’s commit with the NOT operator and commented on the corresponding suggestion that she add the changes. She took a deep breath and moved forward to the following comment.
+“What do you say we verify the activation code on schema level?” — Gretha read in the following comment and opened her mouth unwillingly. “What?” — she thought elaborately — “What schema?” She opened the source code and typed “schema” in the global search of the code editor. A bunch of results popped up. She eliminated some of them as they were a part of comments and things unrelated to the item activation. She was sure she still had to do this task within item activation, whatever this schema was. Finally, she found a variable called activateItemSchema, knowing she had hit the jackpot. Any other search result made as much sense as this variable, so she took a closer look at what was inside  
+export const activateItemSchema = {
+  tags: ['Item'],
+  headers: { $ref: 'authorizationSchema#' },
+  params: {
+    itemId: {
+      type: 'integer',
+      minimum: 1,
+    },
+  },
+};
+She could see that this schema had another schema for headers, some tags, and some params inside the JSON body. She tried to make sense of it but couldn’t connect the dots. “What are you missing?” — she got increasingly frustrated. She searched the WWW and looked for 
+the “schema validation” phrase. Gretha wanted any hook which could help her understand what is she looking at. It’ll always be hard to make green color if you do not know that yellow exists. This was the same situation, as Gretha lacked context and some technical knowledge.  
+After a throughout search, it appeared that you could create validation criteria for your fields, such as allowed data types and value ranges with schema validation. Reading a bunch of schema validation descriptions did not give Gretha the “aha!” moment, though. The params object within the activateItemSchema did.  She noticed that within params an itemId was being stored. Looking after that at the endpoint, she was using to activate the item itself made her discover that the itemId was also in the endpoint parameter.
+That meant it was the schema for how the endpoint should look like! Now “create validation criteria for your fields” made more sense. She could add to the schema of route whatever she wanted and the API should start requiring it when one would like to call this particular endpoint. If she adds a body property and sets it to a minimum length of seven, it would catch a longer activationCode when she passes one! She had to verify it as quick as possible, so she spun up the API for local tests. Tension was present in her body, and she knew she had taken things too far at this point. She did not allow herself a break for a long time now. She fell into a rabbit search hole in search of a horse. It was not likely to come out of it unconfused. 
+Gretha commented out her verifyActivationCode function and added a body that approves an activationCode property. She set the minimumLength and saved the file. The local API reloaded, and she typed an “XXXX-XXXX” value in the body, which the JSON schema should reject. She hit the Send button with grinding teeth. When she saw that the API rejected the request, which meant that she was on the right track, she got happy for a moment. 
+Adding a new property to the acitvateItemSchema worked. She added more security measures, like adding a pattern of the activation code, maximum length, and ensuring no more properties can be passed in the body with the exclusion of activationCode. She ended up with: 
+export const activateItemSchema = {
+  tags: ['Item'],
+  headers: { $ref: 'authorizationSchema#' },
+  body: {
+    type: 'object',
+    required: ['activationCode'],
+    properties: {
+      activationCode: {
+        type: 'string',
+        minLength: 7,
+        maxLength: 7,
+        pattern: '^[A-Z0-9]{3}-[A-Z0-9]{3}$', // activationCode pattern: XXX-XXX
+        nullable: false,
+      },
+    },
+    additionalProperties: false,
+  },
+  params: {
+    itemId: {
+      type: 'integer',
+      minimum: 1,
+    },
+  },
+};
+Gretha took a moment to look at the whole route and its structure again. There it was, the activateItemSchema, added the in schema property of the route, staring back at her so bluntly. She sighed and committed her changes with improved schema validation. After that, she deleted the redundant verifyActivationCode function and modified unit tests to reflect the applied changes. “What am I doing here?” — Gretha thought after she pushed out the commit, feeling like a fraud. She had realized that the answer was there from the very beginning. The PATCH route had the schema defined, but yesterday Gretha did not recognize what she was looking at. She actively decided to ignore the schema key and she moved straight to more familiar preHandlers. 
+  server.patch<ActivateItemRequest>(
+    '/:itemId/activate',
+    {
+      schema: activateItemSchema,
+      preHandler: [
+        server.authenticate,
+        checkForItem,
+        validateActivationAttempts,
+      ],
+    },
+    activateItem,
+  );
+“The only thing that had to be done was to look beyond preHandlers and search in the route a bit“ — she reflected on her own behavior. Gretha thought that if she didn’t jump straightaway to writing code[[ narrator ocenia Grethe - zle, bo ona z wewnatrz leci -> stacilas potwora, walnij go tam bo narrator nie dzadzuje Grethy]], she might have found that activateItemSchema was the right place to add the validation. Adding an additional function to verify the activation code was unnecessary. The JSON schema was guarding the shape of params coming with the API request and the body. 
+On the other hand, she started to code straightaway as advised. This made her angry as she did not know anymore how to act. Valerio was right; the initial code was shaped into something acceptable after applying change requests from her peers. And she did learn several things along the way. She doubted, though, that pushing out this level of code quality for a long time would serve her right. How long could she play the junior card until they all see her for who she is?
